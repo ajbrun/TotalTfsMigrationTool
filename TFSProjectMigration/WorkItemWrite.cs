@@ -1,15 +1,15 @@
-﻿using System;
-using System.Linq;
-using System.Collections.Generic;
-using System.Collections;
-using Microsoft.TeamFoundation.Server;
+﻿using log4net;
 using Microsoft.TeamFoundation.Client;
+using Microsoft.TeamFoundation.Server;
 using Microsoft.TeamFoundation.WorkItemTracking.Client;
 using Microsoft.TeamFoundation.WorkItemTracking.Proxy;
-using System.Xml;
+using System;
+using System.Collections;
+using System.Collections.Generic;
 using System.IO;
-using log4net;
+using System.Linq;
 using System.Windows.Controls;
+using System.Xml;
 
 namespace TFSProjectMigration
 {
@@ -150,6 +150,43 @@ namespace TFSProjectMigration
             }
         }
 
+        private static string GetMappedWorkItemTypeName(string sourceWorkItemType, WorkItemTypeCollection destinationWorkItemTypes)
+        {
+            var workItemTypeNames = new List<string>();
+
+            foreach (WorkItemType item in destinationWorkItemTypes)
+                workItemTypeNames.Add(item.Name);
+
+            return GetMappedWorkItemTypeName(sourceWorkItemType, workItemTypeNames);
+        }
+
+        internal static string GetMappedWorkItemTypeName(string sourceWorkItemType, IEnumerable<string> destinationWorkItemTypeNames)
+        {
+            //We're matched the type!
+            var foundType = destinationWorkItemTypeNames.FirstOrDefault(x => x.Equals(sourceWorkItemType, StringComparison.OrdinalIgnoreCase));
+            if (foundType != null)
+            {
+                return foundType;
+            }
+
+            //Only taking Agile, Scrum and CMMI from link below. Basic has too much cross over...
+            //https://docs.microsoft.com/en-us/azure/devops/boards/work-items/guidance/choose-process?view=azdevops#main-distinctions-among-the-default-processes
+            //Some work item types between processes have different names
+            var productPlanning = new[] { "User Story", "Product Backlog Item", "Requirement" };
+            var riskManagement = new[] { "Issue", "Impediment", "Risk", "Review" };
+
+            if (productPlanning.Any(x => x.Equals(sourceWorkItemType, StringComparison.OrdinalIgnoreCase)))
+            {
+                return productPlanning.FirstOrDefault(x => destinationWorkItemTypeNames.Any(y => y.Equals(x, StringComparison.OrdinalIgnoreCase)));
+            }
+
+            if (riskManagement.Any(x => x.Equals(sourceWorkItemType, StringComparison.OrdinalIgnoreCase)))
+            {
+                return riskManagement.FirstOrDefault(x => destinationWorkItemTypeNames.Any(y => y.Equals(x, StringComparison.OrdinalIgnoreCase)));
+            }
+
+            return null;
+        }
 
         /* Copy work items to project from work item collection */
         public void writeWorkItems(WorkItemStore sourceStore, WorkItemCollection workItemCollection, string sourceProjectName, ProgressBar ProgressBar, Hashtable fieldMapAll)
@@ -166,22 +203,16 @@ namespace TFSProjectMigration
 
                 WorkItem newWorkItem = null;
                 Hashtable fieldMap = ListToTable((List<object>)fieldMapAll[workItem.Type.Name]);
-                if (workItemTypes.Contains(workItem.Type.Name))
-                {
-                    newWorkItem = new WorkItem(workItemTypes[workItem.Type.Name]);
-                }
-                else if (workItem.Type.Name == "User Story")
-                {
-                    newWorkItem = new WorkItem(workItemTypes["Product Backlog Item"]);
-                }
-                else if (workItem.Type.Name == "Issue")
-                {
-                    newWorkItem = new WorkItem(workItemTypes["Impediment"]);
-                }
-                else
+
+                var mappedWorkItemTypeName = GetMappedWorkItemTypeName(workItem.Type.Name, workItemTypes);
+                if (string.IsNullOrWhiteSpace(mappedWorkItemTypeName) || !workItemTypes.Contains(workItem.Type.Name))
                 {
                     logger.InfoFormat("Work Item Type {0} does not exist in target TFS", workItem.Type.Name);
                     continue;
+                }
+                else
+                {
+                    newWorkItem = new WorkItem(workItemTypes[workItem.Type.Name]);
                 }
 
                 /* assign relevent fields*/
@@ -240,8 +271,8 @@ namespace TFSProjectMigration
 
                 ProgressBar.Dispatcher.BeginInvoke(new Action(delegate ()
                 {
-                    float progress = (float)i / (float)workItemCollection.Count;
-                    ProgressBar.Value = ((float)i / (float)workItemCollection.Count) * 100;
+                    float progress = i / (float)workItemCollection.Count;
+                    ProgressBar.Value = (i / (float)workItemCollection.Count) * 100;
                 }));
                 i++;
             }
@@ -365,8 +396,8 @@ namespace TFSProjectMigration
                 index++;
                 ProgressBar.Dispatcher.BeginInvoke(new Action(delegate ()
                 {
-                    float progress = (float)index / (float)workItemCollection.Count;
-                    ProgressBar.Value = ((float)index / (float)workItemCollection.Count) * 100;
+                    float progress = index / (float)workItemCollection.Count;
+                    ProgressBar.Value = (index / (float)workItemCollection.Count) * 100;
                 }));
             }
         }
@@ -428,8 +459,8 @@ namespace TFSProjectMigration
                 index++;
                 ProgressBar.Dispatcher.BeginInvoke(new Action(delegate ()
                 {
-                    float progress = (float)index / (float)workItemCollection.Count;
-                    ProgressBar.Value = ((float)index / (float)workItemCollection.Count) * 100;
+                    float progress = index / (float)workItemCollection.Count;
+                    ProgressBar.Value = (index / (float)workItemCollection.Count) * 100;
                 }));
             }
         }
@@ -578,7 +609,7 @@ namespace TFSProjectMigration
                 {
                     css.CreateNode(node.Attributes["Name"].Value, path.Uri);
                 }
-                catch (Exception ex)
+                catch (Exception)
                 {
                     //node already exists
                     continue;
