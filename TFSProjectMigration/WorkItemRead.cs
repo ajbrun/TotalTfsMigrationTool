@@ -83,10 +83,10 @@ namespace TFSProjectMigration
             {
                 Directory.CreateDirectory(@"Attachments");
             }
-            else
-            {
-                EmptyFolder(new DirectoryInfo(@"Attachments"));
-            }
+            //else
+            //{
+            //    EmptyFolder(new DirectoryInfo(@"Attachments"));
+            //}
 
             System.Net.WebClient webClient = new System.Net.WebClient();
             webClient.UseDefaultCredentials = true;
@@ -105,6 +105,11 @@ namespace TFSProjectMigration
                             if (!folderExists)
                             {
                                 Directory.CreateDirectory(path);
+                            }
+                            else
+                            {
+                                //If directory exists, we're assuming we've had a previously successful run
+                                continue;
                             }
 
                             var filePath = EnsureAllowedFilePathLength(path, att.Name);
