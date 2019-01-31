@@ -139,6 +139,9 @@ namespace TFSProjectMigration
 
             const int maxPathLength = 259;
 
+            //Ensure full directory path
+            directoryPath = Path.GetFullPath(directoryPath);
+
             var fullPath = Path.Combine(directoryPath, fileName);
 
             if (fullPath.Length <= maxPathLength)

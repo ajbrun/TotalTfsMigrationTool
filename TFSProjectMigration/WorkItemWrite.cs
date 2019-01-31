@@ -205,14 +205,14 @@ namespace TFSProjectMigration
                 Hashtable fieldMap = ListToTable((List<object>)fieldMapAll[workItem.Type.Name]);
 
                 var mappedWorkItemTypeName = GetMappedWorkItemTypeName(workItem.Type.Name, workItemTypes);
-                if (string.IsNullOrWhiteSpace(mappedWorkItemTypeName) || !workItemTypes.Contains(workItem.Type.Name))
+                if (string.IsNullOrWhiteSpace(mappedWorkItemTypeName) || !workItemTypes.Contains(mappedWorkItemTypeName))
                 {
                     logger.InfoFormat("Work Item Type {0} does not exist in target TFS", workItem.Type.Name);
                     continue;
                 }
                 else
                 {
-                    newWorkItem = new WorkItem(workItemTypes[workItem.Type.Name]);
+                    newWorkItem = new WorkItem(workItemTypes[mappedWorkItemTypeName]);
                 }
 
                 /* assign relevent fields*/
