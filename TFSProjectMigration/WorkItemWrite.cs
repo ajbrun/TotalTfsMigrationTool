@@ -286,24 +286,27 @@ namespace TFSProjectMigration
 
         internal static string MapStateFieldValue(IEnumerable<string> destinationWorkItemTypeNames, string sourceStateValue)
         {
+            var agileTypes = new[] { "User Story", "Bug", "Epic", "Feature", "Task", "Issue" };
+            var scrumTypes = new[] { "Product Backlog Item", "Bug", "Epic", "Feature", "Task", "Impediment" };
+            var cmmiTypes = new[] { "Requirement", "Bug", "Epic", "Feature", "Task", "Issue", "Issue", "Risk", "Review" };
+
+            //Don't do anything unless we're working with a "standard" type
+
             //If we're sending to Agile
-            if (destinationWorkItemTypeNames.Any(x => x.Equals("User Story", StringComparison.OrdinalIgnoreCase)))
+            if (agileTypes.All(x => destinationWorkItemTypeNames.Any(y => y.Equals(x, StringComparison.OrdinalIgnoreCase))))
             {
                 if (new[] { "To Do", "Proposed" }.Any(x => x.Equals(sourceStateValue, StringComparison.OrdinalIgnoreCase)))
                     return "New";
 
-                if (new[] { "Approved", "Accepted", "In Progress", "Requested" }.Any(x => x.Equals(sourceStateValue, StringComparison.OrdinalIgnoreCase)))
+                if (new[] { "Approved", "In Progress", "Committed" }.Any(x => x.Equals(sourceStateValue, StringComparison.OrdinalIgnoreCase)))
                     return "Active";
 
-                if (new[] { "Committed", "Completed" }.Any(x => x.Equals(sourceStateValue, StringComparison.OrdinalIgnoreCase)))
-                    return "Resolved";
-
-                if (new[] { "Done", "Inactive" }.Any(x => x.Equals(sourceStateValue, StringComparison.OrdinalIgnoreCase)))
+                if (new[] { "Done" }.Any(x => x.Equals(sourceStateValue, StringComparison.OrdinalIgnoreCase)))
                     return "Closed";
             }
 
             //If we're sending to Scrum
-            if (destinationWorkItemTypeNames.Any(x => x.Equals("Product Backlog Item", StringComparison.OrdinalIgnoreCase)))
+            if (scrumTypes.All(x => destinationWorkItemTypeNames.Any(y => y.Equals(x, StringComparison.OrdinalIgnoreCase))))
             {
                 if (new[] { "Proposed" }.Any(x => x.Equals(sourceStateValue, StringComparison.OrdinalIgnoreCase)))
                     return "New";
@@ -319,7 +322,7 @@ namespace TFSProjectMigration
             }
 
             //If we're sending to CMMI
-            if (destinationWorkItemTypeNames.Any(x => x.Equals("Requirement", StringComparison.OrdinalIgnoreCase)))
+            if (cmmiTypes.All(x => destinationWorkItemTypeNames.Any(y => y.Equals(x, StringComparison.OrdinalIgnoreCase))))
             {
                 if (new[] { "To Do", "New" }.Any(x => x.Equals(sourceStateValue, StringComparison.OrdinalIgnoreCase)))
                     return "Proposed";

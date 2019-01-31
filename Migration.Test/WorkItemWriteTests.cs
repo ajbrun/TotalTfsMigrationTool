@@ -59,21 +59,14 @@ namespace Migration.Test
 
         [Theory]
         //From Scrum
-        [InlineData("To Do", "New")] //Task
+        [InlineData("To Do", "New")]
         [InlineData("New", "New")]
-        [InlineData("Committed", "Resolved")]
+        [InlineData("Committed", "Active")]
         [InlineData("Done", "Closed")]
         [InlineData("Removed", "Removed")]
-        [InlineData("Accepted", "Active")]
-        [InlineData("Active", "Active")]
         [InlineData("Approved", "Active")]
         [InlineData("Closed", "Closed")]
-        [InlineData("Completed", "Resolved")] //Test suite
-        [InlineData("Design", "Design")] //Test case
-        [InlineData("In Progress", "Active")] //Features, tasks & Test suites
-        [InlineData("Inactive", "Closed")] //Test plan
-        [InlineData("Ready", "Ready")] //Test plan
-        [InlineData("Requested", "Active")] //Code review
+        [InlineData("In Progress", "Active")]
         //From CMMI
         [InlineData("Proposed", "New")]
         [InlineData("Active", "Active")]
@@ -82,7 +75,7 @@ namespace Migration.Test
         [InlineData("Removed", "Removed")]
         public void MapStateFieldValue_To_Agile(string sourceValue, string expectedResult)
         {
-            var actualResult = WorkItemWrite.MapStateFieldValue(new[] { "User Story" }, sourceValue);
+            var actualResult = WorkItemWrite.MapStateFieldValue(new[] { "User Story", "Bug", "Epic", "Feature", "Task", "Issue", "Test Case" }, sourceValue);
 
             Assert.Equal(expectedResult, actualResult);
         }
@@ -102,7 +95,7 @@ namespace Migration.Test
         [InlineData("Removed", "Removed")]
         public void MapStateFieldValue_To_Scrum(string sourceValue, string expectedResult)
         {
-            var actualResult = WorkItemWrite.MapStateFieldValue(new[] { "Product Backlog Item" }, sourceValue);
+            var actualResult = WorkItemWrite.MapStateFieldValue(new[] { "Product Backlog Item", "Bug", "Epic", "Feature", "Task", "Impediment", "Test Case" }, sourceValue);
 
             Assert.Equal(expectedResult, actualResult);
         }
@@ -123,7 +116,7 @@ namespace Migration.Test
         [InlineData("Removed", "Removed")]
         public void MapStateFieldValue_To_CMMI(string sourceValue, string expectedResult)
         {
-            var actualResult = WorkItemWrite.MapStateFieldValue(new[] { "Requirement" }, sourceValue);
+            var actualResult = WorkItemWrite.MapStateFieldValue(new[] { "Requirement", "Bug", "Epic", "Feature", "Task", "Issue", "Issue", "Risk", "Review", "Test Case" }, sourceValue);
 
             Assert.Equal(expectedResult, actualResult);
         }
