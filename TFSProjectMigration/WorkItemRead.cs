@@ -1,11 +1,11 @@
-﻿using System;
-using System.Linq;
-using Microsoft.TeamFoundation.Server;
+﻿using log4net;
 using Microsoft.TeamFoundation.Client;
+using Microsoft.TeamFoundation.Server;
 using Microsoft.TeamFoundation.WorkItemTracking.Client;
-using System.Xml;
+using System;
 using System.IO;
-using log4net;
+using System.Linq;
+using System.Xml;
 
 namespace TFSProjectMigration
 {
@@ -106,15 +106,16 @@ namespace TFSProjectMigration
                             {
                                 Directory.CreateDirectory(path);
                             }
-                            var fileInfo = new FileInfo(path + "\\" + att.Name);
-                            if (!fileInfo.Exists)
+
+                            var filePath = EnsureAllowedFilePathLength(path, att.Name);
+
+                            if (File.Exists(filePath))
                             {
-                                webClient.DownloadFile(att.Uri, path + "\\" + att.Name);
+                                filePath = EnsureUniqueFilePath(filePath);
+                                filePath = EnsureAllowedFilePathLength(path, Path.GetFileName(filePath));
                             }
-                            else if (fileInfo.Length != att.Length)
-                            {
-                                webClient.DownloadFile(att.Uri, path + "\\" + att.Id + "_" + att.Name);
-                            }
+
+                            webClient.DownloadFile(att.Uri, filePath);
                         }
                         catch (Exception)
                         {
@@ -125,12 +126,36 @@ namespace TFSProjectMigration
                 index++;
                 ProgressBar.Dispatcher.BeginInvoke(new Action(delegate ()
                 {
-                    float progress = (float)index / (float)workItemCollection.Count;
-                    ProgressBar.Value = ((float)index / (float)workItemCollection.Count) * 100;
+                    float progress = index / (float)workItemCollection.Count;
+                    ProgressBar.Value = (index / (float)workItemCollection.Count) * 100;
                 }));
             }
         }
 
+        internal static string EnsureAllowedFilePathLength(string directoryPath, string fileName)
+        {
+            //The specified path, file name, or both are too long. The fully qualified file name must be less than 260 characters, 
+            //and the directory name must be less than 248 characters.
+
+            const int maxPathLength = 259;
+
+            var fullPath = Path.Combine(directoryPath, fileName);
+
+            if (fullPath.Length <= maxPathLength)
+                return fullPath;
+
+            var overflowAmount = fullPath.Length - maxPathLength;
+
+            var fileNameWithoutExtension = Path.GetFileNameWithoutExtension(fileName);
+            fileNameWithoutExtension = fileNameWithoutExtension.Substring(0, fileNameWithoutExtension.Length - overflowAmount);
+
+            return Path.Combine(directoryPath, $"{fileNameWithoutExtension}{Path.GetExtension(fileName)}");
+        }
+
+        internal static string EnsureUniqueFilePath(string filePath)
+        {
+            return Path.Combine(Path.GetFullPath(filePath), $"{Guid.NewGuid()}{Path.GetFileName(filePath)}");
+        }
 
         /*Delete all subfolders and files in given folder*/
         private void EmptyFolder(DirectoryInfo directoryInfo)

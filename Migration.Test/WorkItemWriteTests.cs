@@ -1,5 +1,4 @@
-﻿using System.Collections.Generic;
-using TFSProjectMigration;
+﻿using TFSProjectMigration;
 using Xunit;
 
 namespace Migration.Test
