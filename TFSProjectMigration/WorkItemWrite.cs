@@ -50,17 +50,17 @@ namespace TFSProjectMigration
         }
 
 
-        public void updateToLatestStatus(WorkItem oldWorkItem, WorkItem newWorkItem)
+        public void updateToLatestStatus(IEnumerable<string> destinationWorkItemTypeNames, WorkItem oldWorkItem, WorkItem newWorkItem)
         {
             Queue<string> result = new Queue<string>();
             string previousState = null;
             string originalState = (string)newWorkItem.Fields["State"].Value;
-            string sourceState = (string)oldWorkItem.Fields["State"].Value;
+            string sourceState = MapStateFieldValue(destinationWorkItemTypeNames, oldWorkItem.Fields["State"].Value.ToString());
             string sourceFinalReason = (string)oldWorkItem.Fields["Reason"].Value;
 
             //try to change the status directly
             newWorkItem.Open();
-            newWorkItem.Fields["State"].Value = oldWorkItem.Fields["State"].Value;
+            newWorkItem.Fields["State"].Value = sourceState;
             //System.Diagnostics.Debug.WriteLine(newWorkItem.Type.Name + "      " + newWorkItem.Fields["State"].Value);
 
             //if status can't be changed directly... 
@@ -150,14 +150,14 @@ namespace TFSProjectMigration
             }
         }
 
-        private static string GetMappedWorkItemTypeName(string sourceWorkItemType, WorkItemTypeCollection destinationWorkItemTypes)
+        private static IEnumerable<string> GetWorkItemTypeNames(WorkItemTypeCollection destinationWorkItemTypes)
         {
             var workItemTypeNames = new List<string>();
 
             foreach (WorkItemType item in destinationWorkItemTypes)
                 workItemTypeNames.Add(item.Name);
 
-            return GetMappedWorkItemTypeName(sourceWorkItemType, workItemTypeNames);
+            return workItemTypeNames;
         }
 
         internal static string GetMappedWorkItemTypeName(string sourceWorkItemType, IEnumerable<string> destinationWorkItemTypeNames)
@@ -204,7 +204,8 @@ namespace TFSProjectMigration
                 WorkItem newWorkItem = null;
                 Hashtable fieldMap = ListToTable((List<object>)fieldMapAll[workItem.Type.Name]);
 
-                var mappedWorkItemTypeName = GetMappedWorkItemTypeName(workItem.Type.Name, workItemTypes);
+                var destinationWorkItemTypeNames = GetWorkItemTypeNames(workItemTypes);
+                var mappedWorkItemTypeName = GetMappedWorkItemTypeName(workItem.Type.Name, destinationWorkItemTypeNames);
                 if (string.IsNullOrWhiteSpace(mappedWorkItemTypeName) || !workItemTypes.Contains(mappedWorkItemTypeName))
                 {
                     logger.InfoFormat("Work Item Type {0} does not exist in target TFS", workItem.Type.Name);
@@ -262,7 +263,7 @@ namespace TFSProjectMigration
                     itemMap.Add(workItem.Id, newWorkItem.Id);
                     newItems.Add(workItem);
                     //update workitem status
-                    updateToLatestStatus(workItem, newWorkItem);
+                    updateToLatestStatus(destinationWorkItemTypeNames, workItem, newWorkItem);
                 }
                 else
                 {
@@ -283,6 +284,58 @@ namespace TFSProjectMigration
             CreateExternalLinks(newItems, sourceStore, ProgressBar);
         }
 
+        internal static string MapStateFieldValue(IEnumerable<string> destinationWorkItemTypeNames, string sourceStateValue)
+        {
+            //If we're sending to Agile
+            if (destinationWorkItemTypeNames.Any(x => x.Equals("User Story", StringComparison.OrdinalIgnoreCase)))
+            {
+                if (new[] { "To Do", "Proposed" }.Any(x => x.Equals(sourceStateValue, StringComparison.OrdinalIgnoreCase)))
+                    return "New";
+
+                if (new[] { "Approved", "Accepted", "In Progress", "Requested" }.Any(x => x.Equals(sourceStateValue, StringComparison.OrdinalIgnoreCase)))
+                    return "Active";
+
+                if (new[] { "Committed", "Completed" }.Any(x => x.Equals(sourceStateValue, StringComparison.OrdinalIgnoreCase)))
+                    return "Resolved";
+
+                if (new[] { "Done", "Inactive" }.Any(x => x.Equals(sourceStateValue, StringComparison.OrdinalIgnoreCase)))
+                    return "Closed";
+            }
+
+            //If we're sending to Scrum
+            if (destinationWorkItemTypeNames.Any(x => x.Equals("Product Backlog Item", StringComparison.OrdinalIgnoreCase)))
+            {
+                if (new[] { "Proposed" }.Any(x => x.Equals(sourceStateValue, StringComparison.OrdinalIgnoreCase)))
+                    return "New";
+
+                if (new[] { "Active" }.Any(x => x.Equals(sourceStateValue, StringComparison.OrdinalIgnoreCase)))
+                    return "Approved";
+
+                if (new[] { "Resolved" }.Any(x => x.Equals(sourceStateValue, StringComparison.OrdinalIgnoreCase)))
+                    return "Committed";
+
+                if (new[] { "Closed" }.Any(x => x.Equals(sourceStateValue, StringComparison.OrdinalIgnoreCase)))
+                    return "Done";
+            }
+
+            //If we're sending to CMMI
+            if (destinationWorkItemTypeNames.Any(x => x.Equals("Requirement", StringComparison.OrdinalIgnoreCase)))
+            {
+                if (new[] { "To Do", "New" }.Any(x => x.Equals(sourceStateValue, StringComparison.OrdinalIgnoreCase)))
+                    return "Proposed";
+
+                if (new[] { "Approved" }.Any(x => x.Equals(sourceStateValue, StringComparison.OrdinalIgnoreCase)))
+                    return "Active";
+
+                if (new[] { "Committed" }.Any(x => x.Equals(sourceStateValue, StringComparison.OrdinalIgnoreCase)))
+                    return "Resolved";
+
+                if (new[] { "Done" }.Any(x => x.Equals(sourceStateValue, StringComparison.OrdinalIgnoreCase)))
+                    return "Closed";
+            }
+
+            return sourceStateValue;
+        }
 
         private Hashtable ListToTable(List<object> map)
         {
