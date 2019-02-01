@@ -39,17 +39,6 @@ namespace TFSProjectMigration
             itemMapCIC = new Hashtable();
         }
 
-        //get all workitems from tfs
-        private WorkItemCollection GetWorkItemCollection()
-        {
-            WorkItemCollection workItemCollection = store.Query(" SELECT * " +
-                                                                  " FROM WorkItems " +
-                                                                  " WHERE [System.TeamProject] = '" + projectName +
-                                                                  "' ORDER BY [System.Id]");
-            return workItemCollection;
-        }
-
-
         public void updateToLatestStatus(IEnumerable<string> destinationWorkItemTypeNames, WorkItem oldWorkItem, WorkItem newWorkItem)
         {
             Queue<string> result = new Queue<string>();
@@ -388,7 +377,7 @@ namespace TFSProjectMigration
         private void CreateLinks(List<WorkItem> workItemCollection, WorkItemStore sourceStore, ProgressBar ProgressBar)
         {
             List<int> linkedWorkItemList = new List<int>();
-            WorkItemCollection targetWorkItemCollection = GetWorkItemCollection();
+            
             int index = 0;
             foreach (WorkItem workItem in workItemCollection)
             {
@@ -461,7 +450,6 @@ namespace TFSProjectMigration
         private void CreateExternalLinks(List<WorkItem> workItemCollection, WorkItemStore sourceStore, ProgressBar ProgressBar)
         {
             List<int> linkedWorkItemList = new List<int>();
-            WorkItemCollection targetWorkItemCollection = GetWorkItemCollection();
 
             int index = 0;
             foreach (WorkItem workItem in workItemCollection)
@@ -708,25 +696,6 @@ namespace TFSProjectMigration
                     DictionaryEntry item = (DictionaryEntry)key;
                     file.WriteLine(item.Key + "\t | \t" + item.Value);
                 }
-            }
-        }
-
-
-        //Delete all workitems in project
-        public void DeleteWorkItems()
-        {
-            WorkItemCollection workItemCollection = GetWorkItemCollection();
-            List<int> toDeletes = new List<int>();
-
-            foreach (WorkItem workItem in workItemCollection)
-            {
-                System.Diagnostics.Debug.WriteLine(workItem.Id);
-                toDeletes.Add(workItem.Id);
-            }
-            var errors = store.DestroyWorkItems(toDeletes);
-            foreach (var error in errors)
-            {
-                System.Diagnostics.Debug.WriteLine(error.Exception.Message);
             }
         }
 
