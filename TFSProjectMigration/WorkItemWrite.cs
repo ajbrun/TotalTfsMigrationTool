@@ -187,6 +187,7 @@ namespace TFSProjectMigration
             {
                 if (itemMap.ContainsKey(workItem.Id))
                 {
+                    newItems.Add(workItem);
                     continue;
                 }
 
@@ -265,11 +266,12 @@ namespace TFSProjectMigration
                     ProgressBar.Value = (i / (float)workItemCollection.Count) * 100;
                 }));
                 i++;
+
+                //This could do with being made more performant as it will re-create the file on each work item
+                WriteMaptoFile(sourceProjectName);
             }
 
-            WriteMaptoFile(sourceProjectName);
             CreateLinks(newItems, sourceStore, ProgressBar);
-
             CreateExternalLinks(newItems, sourceStore, ProgressBar);
         }
 
@@ -377,7 +379,7 @@ namespace TFSProjectMigration
         private void CreateLinks(List<WorkItem> workItemCollection, WorkItemStore sourceStore, ProgressBar ProgressBar)
         {
             List<int> linkedWorkItemList = new List<int>();
-            
+
             int index = 0;
             foreach (WorkItem workItem in workItemCollection)
             {
