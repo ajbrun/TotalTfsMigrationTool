@@ -478,8 +478,14 @@ namespace TFSProjectMigration
                                 if (!uri.ToLower().Contains("changeset"))
                                 {
                                     uri = uri.Replace(oldProjectName, newProjectName);
-                                    var newLink = new ExternalLink(linkType, uri);
-                                    newWorkItem.Links.Add(newLink);
+
+                                    if (IsValidTfsUri(uri))
+                                    {
+                                        var newLink = new ExternalLink(linkType, uri);
+                                        newWorkItem.Links.Add(newLink);
+                                    }
+                                    else
+                                        logger.Warn("External link is not valid for work item: " + workItem.Id + " - link: " + uri);
                                 }
                             }
                             else if (link is Hyperlink)
@@ -487,8 +493,14 @@ namespace TFSProjectMigration
                                 var oldLink = link as Hyperlink;
                                 var uri = oldLink.Location;
                                 uri = uri.Replace(oldProjectName, newProjectName);
-                                var newLink = new Hyperlink(uri);
-                                newWorkItem.Links.Add(newLink);
+
+                                if (IsValidTfsUri(uri))
+                                {
+                                    var newLink = new Hyperlink(uri);
+                                    newWorkItem.Links.Add(newLink);
+                                }
+                                else
+                                    logger.Warn("Link is not valid for work item: " + workItem.Id + " - link: " + uri);
                             }
                         }
                         catch (Exception)
@@ -509,6 +521,17 @@ namespace TFSProjectMigration
                     ProgressBar.Value = (index / (float)workItemCollection.Count) * 100;
                 }));
             }
+        }
+
+        internal static bool IsValidTfsUri(string uri)
+        {
+            //The URL specified has a potentially unsafe URL protocol.  Please specify a different URL.
+            //URI schemes supported are: http, https, ftp, gopher, mailto, news, telnet, wais, vstfs, tfs, alm, mtm, mtms, mtr, mtrs, mfbclient, mfbclients, test-runner, x-mvwit, onenote, codeflow, file, tel, skype.
+            var validProtocols = new[] { "http", "https", "ftp", "gopher", "mailto", "news", "telnet", "wais", "vstfs", "tfs", "alm", "mtm", "mtms", "mtr", "mtrs", "mfbclient", "mfbclients", "test-runner", "x-mvwit", "onenote", "codeflow", "file", "tel", "skype" };
+
+            var isValid = validProtocols.Any(x => uri.StartsWith($"{x}://"));
+
+            return isValid;
         }
 
 

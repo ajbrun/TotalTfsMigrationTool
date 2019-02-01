@@ -120,5 +120,18 @@ namespace Migration.Test
 
             Assert.Equal(expectedResult, actualResult);
         }
+
+        [Theory]
+        [InlineData("http://google.com", true)]
+        [InlineData("https://google.com", true)]
+        [InlineData("mailto://test@test.com", true)]
+        [InlineData("ftp://google.com", true)]
+        [InlineData("speclog://aigrouptfs/AIProcurement/requirements/42555f3c-6415-47b7-82b2-586cbbfd8d3a", false)]
+        public void IsValidTfsUri(string uri, bool expectedResult)
+        {
+            var actualResult = WorkItemWrite.IsValidTfsUri(uri);
+
+            Assert.Equal(expectedResult, actualResult);
+        }
     }
 }
