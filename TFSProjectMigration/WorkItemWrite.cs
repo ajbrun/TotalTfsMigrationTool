@@ -10,6 +10,7 @@ using System.IO;
 using System.Linq;
 using System.Windows.Controls;
 using System.Xml;
+using TFSProjectMigration.Extensions;
 
 namespace TFSProjectMigration
 {
@@ -101,7 +102,7 @@ namespace TFSProjectMigration
             {
                 workItem.Open();
                 workItem.Fields["State"].Value = destState;
-                workItem.Save();
+                workItem.RetrySave();
                 return true;
             }
             catch (Exception)
@@ -125,7 +126,7 @@ namespace TFSProjectMigration
                 workItem.Fields["Reason"].Value = reason;
 
                 ArrayList list = workItem.Validate();
-                workItem.Save();
+                workItem.RetrySave();
 
                 return true;
             }
@@ -185,79 +186,80 @@ namespace TFSProjectMigration
             List<WorkItem> newItems = new List<WorkItem>();
             foreach (WorkItem workItem in workItemCollection)
             {
-                if (itemMap.ContainsKey(workItem.Id))
+                if (!itemMap.ContainsKey(workItem.Id))
                 {
-                    newItems.Add(workItem);
-                    continue;
-                }
+                    WorkItem newWorkItem = null;
+                    Hashtable fieldMap = ListToTable((List<object>)fieldMapAll[workItem.Type.Name]);
 
-                WorkItem newWorkItem = null;
-                Hashtable fieldMap = ListToTable((List<object>)fieldMapAll[workItem.Type.Name]);
-
-                var destinationWorkItemTypeNames = GetWorkItemTypeNames(workItemTypes);
-                var mappedWorkItemTypeName = GetMappedWorkItemTypeName(workItem.Type.Name, destinationWorkItemTypeNames);
-                if (string.IsNullOrWhiteSpace(mappedWorkItemTypeName) || !workItemTypes.Contains(mappedWorkItemTypeName))
-                {
-                    logger.InfoFormat("Work Item Type {0} does not exist in target TFS", workItem.Type.Name);
-                    continue;
-                }
-                else
-                {
-                    newWorkItem = new WorkItem(workItemTypes[mappedWorkItemTypeName]);
-                }
-
-                /* assign relevent fields*/
-                foreach (Field field in workItem.Fields)
-                {
-                    if (field.Name.Contains("ID") || field.Name.Contains("State") || field.Name.Contains("Reason"))
+                    var destinationWorkItemTypeNames = GetWorkItemTypeNames(workItemTypes);
+                    var mappedWorkItemTypeName = GetMappedWorkItemTypeName(workItem.Type.Name, destinationWorkItemTypeNames);
+                    if (string.IsNullOrWhiteSpace(mappedWorkItemTypeName) || !workItemTypes.Contains(mappedWorkItemTypeName))
                     {
+                        logger.InfoFormat("Work Item Type {0} does not exist in target TFS", workItem.Type.Name);
                         continue;
                     }
-
-                    if (newWorkItem.Fields.Contains(field.Name) && newWorkItem.Fields[field.Name].IsEditable)
+                    else
                     {
-                        newWorkItem.Fields[field.Name].Value = field.Value;
-                        if (field.Name == "Iteration Path" || field.Name == "Area Path" || field.Name == "Node Name" || field.Name == "Team Project")
+                        newWorkItem = new WorkItem(workItemTypes[mappedWorkItemTypeName]);
+                    }
+
+                    /* assign relevent fields*/
+                    foreach (Field field in workItem.Fields)
+                    {
+                        if (field.Name.Contains("ID") || field.Name.Contains("State") || field.Name.Contains("Reason"))
                         {
-                            try
+                            continue;
+                        }
+
+                        if (newWorkItem.Fields.Contains(field.Name) && newWorkItem.Fields[field.Name].IsEditable)
+                        {
+                            newWorkItem.Fields[field.Name].Value = field.Value;
+                            if (field.Name == "Iteration Path" || field.Name == "Area Path" || field.Name == "Node Name" || field.Name == "Team Project")
                             {
-                                string itPath = (string)field.Value;
-                                int length = sourceProjectName.Length;
-                                string itPathNew = destinationProject.Name + itPath.Substring(length);
-                                newWorkItem.Fields[field.Name].Value = itPathNew;
-                            }
-                            catch (Exception)
-                            {
+                                try
+                                {
+                                    string itPath = (string)field.Value;
+                                    int length = sourceProjectName.Length;
+                                    string itPathNew = destinationProject.Name + itPath.Substring(length);
+                                    newWorkItem.Fields[field.Name].Value = itPathNew;
+                                }
+                                catch (Exception)
+                                {
+                                }
                             }
                         }
+                        //Add values to mapped fields
+                        else if (fieldMap.ContainsKey(field.Name))
+                        {
+                            newWorkItem.Fields[(string)fieldMap[field.Name]].Value = field.Value;
+                        }
                     }
-                    //Add values to mapped fields
-                    else if (fieldMap.ContainsKey(field.Name))
+
+                    /* Validate Item Before Save*/
+                    ArrayList array = newWorkItem.Validate();
+                    foreach (Field item in array)
                     {
-                        newWorkItem.Fields[(string)fieldMap[field.Name]].Value = field.Value;
+                        logger.Info(String.Format("Work item {0} Validation Error in field: {1}  : {2}", workItem.Id, item.Name, newWorkItem.Fields[item.Name].Value));
                     }
-                }
+                    //if work item is valid
+                    if (array.Count == 0)
+                    {
+                        UploadAttachments(newWorkItem, workItem);
+                        newWorkItem.RetrySave();
 
-                /* Validate Item Before Save*/
-                ArrayList array = newWorkItem.Validate();
-                foreach (Field item in array)
-                {
-                    logger.Info(String.Format("Work item {0} Validation Error in field: {1}  : {2}", workItem.Id, item.Name, newWorkItem.Fields[item.Name].Value));
-                }
-                //if work item is valid
-                if (array.Count == 0)
-                {
-                    UploadAttachments(newWorkItem, workItem);
-                    newWorkItem.Save();
-
-                    itemMap.Add(workItem.Id, newWorkItem.Id);
-                    newItems.Add(workItem);
-                    //update workitem status
-                    updateToLatestStatus(destinationWorkItemTypeNames, workItem, newWorkItem);
+                        itemMap.Add(workItem.Id, newWorkItem.Id);
+                        newItems.Add(workItem);
+                        //update workitem status
+                        updateToLatestStatus(destinationWorkItemTypeNames, workItem, newWorkItem);
+                    }
+                    else
+                    {
+                        logger.ErrorFormat("Work item {0} could not be saved", workItem.Id);
+                    }
                 }
                 else
                 {
-                    logger.ErrorFormat("Work item {0} could not be saved", workItem.Id);
+                    newItems.Add(workItem);
                 }
 
                 ProgressBar.Dispatcher.BeginInvoke(new Action(delegate ()
@@ -413,7 +415,7 @@ namespace TFSProjectMigration
                                         ArrayList array = newWorkItem.Validate();
                                         if (array.Count == 0)
                                         {
-                                            newWorkItem.Save();
+                                            newWorkItem.RetrySave();
                                         }
                                         else
                                         {
@@ -510,7 +512,7 @@ namespace TFSProjectMigration
                     }
                     if (newWorkItem.IsDirty)
                     {
-                        newWorkItem.Save();
+                        newWorkItem.RetrySave();
                     }
                 }
 

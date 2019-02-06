@@ -286,6 +286,7 @@
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
     </ApplicationDefinition>
+    <Compile Include="Extensions\WorkItemExtensions.cs" />
     <Compile Include="ImageHelpers.cs" />
     <Compile Include="ItemTypes.cs" />
     <Compile Include="TestPlanMigration.cs" />
