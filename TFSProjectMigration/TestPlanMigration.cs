@@ -151,6 +151,11 @@ namespace TFSProjectMigration
                         var sharedStepRef = item as ISharedStepReference;
                         if (sharedStepRef != null)
                         {
+                            if(!workItemMap.ContainsKey(sharedStepRef.SharedStepId))
+                            {
+                                continue;
+                            }
+
                             int newSharedStepId = (int)workItemMap[sharedStepRef.SharedStepId];
                             //GetNewSharedStepId(testCase.Id, sharedStepRef.SharedStepId);
                             if (0 != newSharedStepId)
