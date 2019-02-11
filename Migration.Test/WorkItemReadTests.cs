@@ -1,6 +1,4 @@
-﻿using System;
-using System.IO;
-using TFSProjectMigration;
+﻿using TFSProjectMigration;
 using Xunit;
 
 namespace Migration.Test

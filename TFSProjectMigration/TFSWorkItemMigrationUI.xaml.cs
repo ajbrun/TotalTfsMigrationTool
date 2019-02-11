@@ -1,30 +1,17 @@
 ﻿
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Collections;
-using System.Threading.Tasks;
-using System.Windows;
-using System.Windows.Controls;
-using System.Windows.Data;
-using System.Windows.Documents;
-using System.Windows.Input;
-using System.Windows.Media;
-using System.Windows.Media.Imaging;
-using System.Windows.Navigation;
-using System.Windows.Shapes;
-using System.Windows.Forms;
-using Microsoft.TeamFoundation;
+using log4net;
+using log4net.Config;
 using Microsoft.TeamFoundation.Client;
 using Microsoft.TeamFoundation.WorkItemTracking.Client;
-using Microsoft.TeamFoundation.TestManagement.Client;
-using Microsoft.TeamFoundation.Server;
-using System.ComponentModel;
-using System.Xml;
-using log4net.Config;
-using log4net;
+using System;
+using System.Collections;
+using System.Collections.Generic;
+using System.Linq;
 using System.Threading;
+using System.Windows;
+using System.Windows.Controls;
+using System.Windows.Forms;
+using System.Xml;
 
 namespace TFSProjectMigration
 {
@@ -109,7 +96,7 @@ namespace TFSProjectMigration
 
                 destinationTFS = tpp.SelectedTeamProjectCollection;
                 destinationStore = (WorkItemStore)destinationTFS.GetService(typeof(WorkItemStore));
-
+                
                 destinationProject = destinationStore.Projects[tpp.SelectedProjects[0].Name];
                 DestinationProjectText.Text = string.Format("{0}/{1}", destinationTFS.Uri.ToString(), destinationProject.Name);
                 writeTarget = new WorkItemWrite(destinationTFS, destinationProject);
@@ -405,19 +392,7 @@ namespace TFSProjectMigration
             {
                 System.Windows.MessageBox.Show(error, "Error", MessageBoxButton.OK, MessageBoxImage.Error);
             }
-            WorkFlowListGrid.Items.Refresh();
-            //for (int i = 0; i < migrateTypeSet.Count; i++)
-            //{
-            //    object[] field = (object[])migrateTypeSet[i];
-            //    if ((bool)field[1])
-            //    {
-            //        ItemCollection items = (ItemCollection)WorkFlowListGrid.Items.GetItemAt(i);
-            //        foreach (ItemsControl item in items)
-            //        {
-            //            item.IsEnabled = false;
-            //        }
-            //    }
-            //} 
+            WorkFlowListGrid.Items.Refresh(); 
         }
 
         private void CheckTestPlanHyperLink_Click(object sender, RoutedEventArgs e)
