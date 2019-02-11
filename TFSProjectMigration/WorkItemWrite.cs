@@ -548,7 +548,6 @@ namespace TFSProjectMigration
                 foreach (Attachment att in attachmentCollection)
                 {
                     string comment = att.Comment;
-
                     var path = @"Attachments\" + workItemOld.Id;
                     string name = WorkItemRead.EnsureAllowedFilePathLength(path, att.Name);
                     string nameWithID = WorkItemRead.EnsureAllowedFilePathLength(path, Path.GetFileName(WorkItemRead.EnsureUniqueFileName(att.Id, att.Name)));

@@ -22,13 +22,14 @@ namespace Migration.Test
         }
 
         [Theory]
-        [InlineData("D:\\TotalTfsMigrationTool\\TFSProjectMigration\\bin\\Debug\\Attachments\\2444\\testing.txt")]
-        public void EnsureUniqueFilePath(string filePath)
+        [InlineData(1234, "D:\\TotalTfsMigrationTool\\TFSProjectMigration\\bin\\Debug\\Attachments\\2444\\testing.txt")]
+        public void EnsureUniqueFileName(int attachmentId, string filePath)
         {
-            var actualResult = WorkItemRead.EnsureUniqueFilePath(filePath);
+            var actualResult = WorkItemRead.EnsureUniqueFileName(attachmentId, filePath);
 
             Assert.NotEqual(filePath, actualResult);
-            Assert.Equal(Path.GetFileName(filePath), Path.GetFileName(actualResult).Substring(36));
+            Assert.Equal("D:\\TotalTfsMigrationTool\\TFSProjectMigration\\bin\\Debug\\Attachments\\2444\\1234_testing.txt",
+                actualResult);
         }
     }
 }

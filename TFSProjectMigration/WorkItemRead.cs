@@ -96,27 +96,38 @@ namespace TFSProjectMigration
             {
                 if (wi.AttachedFileCount > 0)
                 {
+                    String path = @"Attachments\" + wi.Id;
+                    bool folderExists = Directory.Exists(path);
+                    if (!folderExists)
+                    {
+                        Directory.CreateDirectory(path);
+                    }
+                    else
+                    {
+                        //If directory exists, we're assuming we've had a previously successful run for this work item
+                        continue;
+                    }
+
                     foreach (Attachment att in wi.Attachments)
                     {
                         try
                         {
-                            String path = @"Attachments\" + wi.Id;
-                            bool folderExists = Directory.Exists(path);
-                            if (!folderExists)
-                            {
-                                Directory.CreateDirectory(path);
-                            }
-                            else
-                            {
-                                //If directory exists, we're assuming we've had a previously successful run
-                                continue;
-                            }
-
                             var filePath = EnsureAllowedFilePathLength(path, att.Name);
 
-                            if (File.Exists(filePath))
+                            var isUniqueNme = true;
+                            if (wi.AttachedFileCount > 1)
+                                foreach (Attachment uniqueCheck in wi.Attachments)
+                                {
+                                    if (uniqueCheck.Id != att.Id && uniqueCheck.Name.Equals(att.Name, StringComparison.OrdinalIgnoreCase))
+                                    {
+                                        isUniqueNme = false;
+                                        break;
+                                    }
+                                }
+
+                            if (!isUniqueNme)
                             {
-                                filePath = EnsureUniqueFilePath(filePath);
+                                filePath = EnsureUniqueFileName(att.Id, filePath);
                                 filePath = EnsureAllowedFilePathLength(path, Path.GetFileName(filePath));
                             }
 
@@ -160,9 +171,9 @@ namespace TFSProjectMigration
             return Path.Combine(directoryPath, $"{fileNameWithoutExtension}{Path.GetExtension(fileName)}");
         }
 
-        internal static string EnsureUniqueFilePath(string filePath)
+        internal static string EnsureUniqueFileName(int attachmentId, string filePath)
         {
-            return Path.Combine(Path.GetFullPath(filePath), $"{Guid.NewGuid()}{Path.GetFileName(filePath)}");
+            return Path.Combine(Path.GetDirectoryName(filePath), $"{attachmentId}_{Path.GetFileName(filePath)}");
         }
 
         /*Delete all subfolders and files in given folder*/
