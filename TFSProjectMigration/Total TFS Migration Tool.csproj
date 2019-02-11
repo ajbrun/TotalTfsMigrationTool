@@ -287,8 +287,10 @@
       <SubType>Designer</SubType>
     </ApplicationDefinition>
     <Compile Include="Extensions\WorkItemExtensions.cs" />
+    <Compile Include="Extensions\WorkItemStoreExtensions.cs" />
     <Compile Include="ImageHelpers.cs" />
     <Compile Include="ItemTypes.cs" />
+    <Compile Include="ConnectionHelper.cs" />
     <Compile Include="TestPlanMigration.cs" />
     <Compile Include="TestPlanViewUI.xaml.cs">
       <DependentUpon>TestPlanViewUI.xaml</DependentUpon>

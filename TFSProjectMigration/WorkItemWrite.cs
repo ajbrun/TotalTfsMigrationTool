@@ -223,8 +223,9 @@ namespace TFSProjectMigration
                                     string itPathNew = destinationProject.Name + itPath.Substring(length);
                                     newWorkItem.Fields[field.Name].Value = itPathNew;
                                 }
-                                catch (Exception)
+                                catch (Exception e)
                                 {
+                                    logger.Error($"Error setting {field.Name} field", e);
                                 }
                             }
                         }
@@ -389,13 +390,13 @@ namespace TFSProjectMigration
                 if (links.Count > 0)
                 {
                     int newWorkItemID = (int)itemMap[workItem.Id];
-                    WorkItem newWorkItem = store.GetWorkItem(newWorkItemID);
+                    WorkItem newWorkItem = store.RetryGetWorkItem(newWorkItemID);
 
                     foreach (WorkItemLink link in links)
                     {
                         try
                         {
-                            WorkItem targetItem = sourceStore.GetWorkItem(link.TargetId);
+                            WorkItem targetItem = sourceStore.RetryGetWorkItem(link.TargetId);
                             if (itemMap.ContainsKey(link.TargetId) && targetItem != null)
                             {
                                 int targetWorkItemID = 0;
@@ -462,7 +463,7 @@ namespace TFSProjectMigration
                 if (links.Count > 0)
                 {
                     int newWorkItemID = (int)itemMap[workItem.Id];
-                    WorkItem newWorkItem = store.GetWorkItem(newWorkItemID);
+                    WorkItem newWorkItem = store.RetryGetWorkItem(newWorkItemID);
 
                     var oldProjectName = string.Format("{0}%2F{1}", sourceStore.TeamProjectCollection.Name, workItem.Project.Name).Replace("tfs\\", "");
                     var newProjectName = string.Format("{0}%2F{1}", store.TeamProjectCollection.Name, newWorkItem.Project.Name).Replace("tfs\\", "");
@@ -541,30 +542,35 @@ namespace TFSProjectMigration
         private void UploadAttachments(WorkItem workItem, WorkItem workItemOld)
         {
             AttachmentCollection attachmentCollection = workItemOld.Attachments;
-            foreach (Attachment att in attachmentCollection)
-            {
-                string comment = att.Comment;
-                string name = @"Attachments\" + workItemOld.Id + "\\" + att.Name;
-                string nameWithID = @"Attachments\" + workItemOld.Id + "\\" + att.Id + "_" + att.Name;
-                try
-                {
-                    if (File.Exists(nameWithID))
-                    {
-                        workItem.Attachments.Add(new Attachment(nameWithID, comment));
-                    }
-                    else
-                    {
-                        workItem.Attachments.Add(new Attachment(name, comment));
-                    }
-                }
-                catch (Exception ex)
-                {
-                    logger.ErrorFormat("Error saving attachment: {0} for workitem: {1}", att.Name, workItemOld.Id);
-                    logger.Error("Error detail: ", ex);
-                }
-            }
-        }
 
+            ConnectionHelper.Retry(() =>
+            {
+                foreach (Attachment att in attachmentCollection)
+                {
+                    string comment = att.Comment;
+
+                    var path = @"Attachments\" + workItemOld.Id;
+                    string name = WorkItemRead.EnsureAllowedFilePathLength(path, att.Name);
+                    string nameWithID = WorkItemRead.EnsureAllowedFilePathLength(path, Path.GetFileName(WorkItemRead.EnsureUniqueFileName(att.Id, att.Name)));
+                    try
+                    {
+                        if (File.Exists(nameWithID))
+                        {
+                            workItem.Attachments.Add(new Attachment(nameWithID, comment));
+                        }
+                        else
+                        {
+                            workItem.Attachments.Add(new Attachment(name, comment));
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        logger.ErrorFormat("Error saving attachment: {0} for workitem: {1}", att.Name, workItemOld.Id);
+                        logger.Error("Error detail: ", ex);
+                    }
+                }
+            }, $"UploadAttachments: Source workitem Id: {workItemOld.Id}, destination workitem Id: {workItem.Id}");
+        }
 
         public void GenerateIterations(XmlNode tree, string sourceProjectName)
         {

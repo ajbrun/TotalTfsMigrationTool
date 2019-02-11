@@ -5,31 +5,32 @@ using System;
 
 namespace TFSProjectMigration.Extensions
 {
-    public static class WorkItemExtensions
+    public static class WorkItemStoreExtensions
     {
         private static readonly ILog logger = LogManager.GetLogger(typeof(TFSWorkItemMigrationUI));
 
-        public static void RetrySave(this WorkItem workItem, int maxAttempts = 100)
+        public static WorkItem RetryGetWorkItem(this WorkItemStore workItemStore, int workItemId, int maxAttempts = 100)
         {
-            ConnectionHelper.Retry(() => workItem.Save(), $"SaveWorkItem: {workItem.Type.Name} {workItem.State} {workItem.Title}", maxAttempts);
+            return ConnectionHelper.Retry(() => workItemStore.GetWorkItem(workItemId), $"GetWorkItem: {workItemId}", maxAttempts);
 
             //int i = 0;
             //while (i < retryTimes)
             //{
             //    try
             //    {
-            //        workItem.Save();
-            //        return;
+            //        return workItemStore.GetWorkItem(workItemId);
             //    }
             //    catch (TeamFoundationServiceUnavailableException e)
             //    {
-            //        logger.Error($"Work item not <{workItem.Title}> saved. Retrying...", e);
+            //        logger.Error($"Work item ID <{workItemStore}> could not be fetched. Retrying...", e);
             //    }
             //    finally
             //    {
             //        i++;
             //    }
             //}
+
+            //return null;
         }
     }
 }
