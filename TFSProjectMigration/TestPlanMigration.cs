@@ -1,15 +1,15 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using log4net;
+using log4net.Config;
+using Microsoft.TeamFoundation.Client;
+using Microsoft.TeamFoundation.Server;
+using Microsoft.TeamFoundation.TestManagement.Client;
+using Microsoft.TeamFoundation.WorkItemTracking.Client;
+using System;
 using System.Collections;
+using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
-using Microsoft.TeamFoundation.Client;
-using Microsoft.TeamFoundation.WorkItemTracking.Client;
-using Microsoft.TeamFoundation.TestManagement.Client;
-using Microsoft.TeamFoundation.Server;
-using log4net.Config;
-using log4net;
 using System.Windows.Controls;
 
 namespace TFSProjectMigration
@@ -38,19 +38,13 @@ namespace TFSProjectMigration
 
             return tms.GetTeamProject(project);
         }
+
         public void CopyTestPlans()
         {
+            destinationproj.WitProject.Store.SyncToCache();
+
             int i = 1;
             int planCount = sourceproj.TestPlans.Query("Select * From TestPlan").Count;
-            //delete Test Plans if any existing test plans.
-            //foreach (ITestPlan destinationplan in destinationproj.TestPlans.Query("Select * From TestPlan"))
-            //{
-
-            //    System.Diagnostics.Debug.WriteLine("Deleting Plan - {0} : {1}", destinationplan.Id, destinationplan.Name);
-
-            //    destinationplan.Delete(DeleteAction.ForceDeletion); ;
-
-            //}
 
             foreach (ITestPlan sourceplan in sourceproj.TestPlans.Query("Select * From TestPlan"))
             {
@@ -75,9 +69,9 @@ namespace TFSProjectMigration
 
                 progressBar.Dispatcher.BeginInvoke(new Action(delegate ()
                 {
-                    float progress = (float)i / (float)planCount;
+                    float progress = i / (float)planCount;
 
-                    progressBar.Value = ((float)i / (float)planCount) * 100;
+                    progressBar.Value = (i / (float)planCount) * 100;
                 }));
                 i++;
             }
@@ -91,7 +85,7 @@ namespace TFSProjectMigration
 
             foreach (ITestSuiteEntry suite_entry in suites)
             {
-                IStaticTestSuite suite = suite_entry.TestSuite as IStaticTestSuite;
+                var suite = suite_entry.TestSuite;
                 if (suite != null)
                 {
                     IStaticTestSuite newSuite = destinationproj.TestSuites.CreateStatic();
@@ -99,9 +93,13 @@ namespace TFSProjectMigration
                     destinationplan.RootSuite.Entries.Add(newSuite);
                     destinationplan.Save();
 
-                    CopyTestCases(suite, newSuite);
-                    if (suite.Entries.Count > 0)
-                        CopySubTestSuites(suite, newSuite);
+                    var staticTestSuite = suite_entry.TestSuite as IStaticTestSuite;
+                    if (staticTestSuite != null)
+                    {
+                        CopyTestCases(staticTestSuite, newSuite);
+                        if (staticTestSuite.Entries.Count > 0)
+                            CopySubTestSuites(staticTestSuite, newSuite);
+                    }
                 }
             }
         }
@@ -148,22 +146,8 @@ namespace TFSProjectMigration
                     TestActionCollection testActionCollection = tc.Actions;
                     foreach (var item in testActionCollection)
                     {
-                        var sharedStepRef = item as ISharedStepReference;
-                        if (sharedStepRef != null)
-                        {
-                            if(!workItemMap.ContainsKey(sharedStepRef.SharedStepId))
-                            {
-                                continue;
-                            }
-
-                            int newSharedStepId = (int)workItemMap[sharedStepRef.SharedStepId];
-                            //GetNewSharedStepId(testCase.Id, sharedStepRef.SharedStepId);
-                            if (0 != newSharedStepId)
-                            {
-                                sharedStepRef.SharedStepId = newSharedStepId;
-                                updateTestCase = true;
-                            }
-                        }
+                        updateTestCase = true;
+                        item.CopyToNewOwner(tc);
                     }
                     if (updateTestCase)
                     {
