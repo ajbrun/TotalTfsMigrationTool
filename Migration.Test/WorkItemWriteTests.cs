@@ -59,64 +59,65 @@ namespace Migration.Test
 
         [Theory]
         //From Scrum
-        [InlineData("To Do", "New")]
-        [InlineData("New", "New")]
-        [InlineData("Committed", "Active")]
-        [InlineData("Done", "Closed")]
-        [InlineData("Removed", "Removed")]
-        [InlineData("Approved", "Active")]
-        [InlineData("Closed", "Closed")]
-        [InlineData("In Progress", "Active")]
+        [InlineData("To Do", "User Story", "New")]
+        [InlineData("New", "User Story", "New")]
+        [InlineData("Committed", "User Story", "Active")]
+        [InlineData("Done", "User Story", "Closed")]
+        [InlineData("Removed", "User Story", "Removed")]
+        [InlineData("Approved", "User Story", "Active")]
+        [InlineData("Closed", "User Story", "Closed")]
+        [InlineData("In Progress", "User Story", "Active")]
+        [InlineData("Removed", "Bug", "Closed")]
         //From CMMI
-        [InlineData("Proposed", "New")]
-        [InlineData("Active", "Active")]
-        [InlineData("Resolved", "Resolved")]
-        [InlineData("Closed", "Closed")]
-        [InlineData("Removed", "Removed")]
-        public void MapStateFieldValue_To_Agile(string sourceValue, string expectedResult)
+        [InlineData("Proposed", "User Story", "New")]
+        [InlineData("Active", "User Story", "Active")]
+        [InlineData("Resolved", "User Story", "Resolved")]
+        [InlineData("Closed", "User Story", "Closed")]
+        [InlineData("Removed", "User Story", "Removed")]
+        public void MapStateFieldValue_To_Agile(string sourceValue, string destinationWorkItemType, string expectedResult)
         {
-            var actualResult = WorkItemWrite.MapStateFieldValue(new[] { "User Story", "Bug", "Epic", "Feature", "Task", "Issue", "Test Case" }, sourceValue);
+            var actualResult = WorkItemWrite.MapStateFieldValue(new[] { "User Story", "Bug", "Epic", "Feature", "Task", "Issue", "Test Case" }, destinationWorkItemType, sourceValue);
 
             Assert.Equal(expectedResult, actualResult);
         }
 
         [Theory]
         //From Agile
-        [InlineData("New", "New")]
-        [InlineData("Active", "Approved")]
-        [InlineData("Resolved", "Committed")]
-        [InlineData("Closed", "Done")]
-        [InlineData("Removed", "Removed")]
+        [InlineData("New", "Product Backlog Item", "New")]
+        [InlineData("Active", "Product Backlog Item", "Approved")]
+        [InlineData("Resolved", "Product Backlog Item", "Committed")]
+        [InlineData("Closed", "Product Backlog Item", "Done")]
+        [InlineData("Removed", "Product Backlog Item", "Removed")]
         //From CMMI
-        [InlineData("Proposed", "New")]
-        [InlineData("Active", "Approved")]
-        [InlineData("Resolved", "Committed")]
-        [InlineData("Closed", "Done")]
-        [InlineData("Removed", "Removed")]
-        public void MapStateFieldValue_To_Scrum(string sourceValue, string expectedResult)
+        [InlineData("Proposed", "Product Backlog Item", "New")]
+        [InlineData("Active", "Product Backlog Item", "Approved")]
+        [InlineData("Resolved", "Product Backlog Item", "Committed")]
+        [InlineData("Closed", "Product Backlog Item", "Done")]
+        [InlineData("Removed", "Product Backlog Item", "Removed")]
+        public void MapStateFieldValue_To_Scrum(string sourceValue, string destinationWorkItemType, string expectedResult)
         {
-            var actualResult = WorkItemWrite.MapStateFieldValue(new[] { "Product Backlog Item", "Bug", "Epic", "Feature", "Task", "Impediment", "Test Case" }, sourceValue);
+            var actualResult = WorkItemWrite.MapStateFieldValue(new[] { "Product Backlog Item", "Bug", "Epic", "Feature", "Task", "Impediment", "Test Case" }, destinationWorkItemType, sourceValue);
 
             Assert.Equal(expectedResult, actualResult);
         }
 
         [Theory]
         //From Agile
-        [InlineData("New", "Proposed")]
-        [InlineData("Active", "Active")]
-        [InlineData("Resolved", "Resolved")]
-        [InlineData("Closed", "Closed")]
-        [InlineData("Removed", "Removed")]
+        [InlineData("New", "Requirement", "Proposed")]
+        [InlineData("Active", "Requirement", "Active")]
+        [InlineData("Resolved", "Requirement", "Resolved")]
+        [InlineData("Closed", "Requirement", "Closed")]
+        [InlineData("Removed", "Requirement", "Removed")]
         //From Scrum
-        [InlineData("To Do", "Proposed")]
-        [InlineData("New", "Proposed")]
-        [InlineData("Approved", "Active")]
-        [InlineData("Committed", "Resolved")]
-        [InlineData("Done", "Closed")]
-        [InlineData("Removed", "Removed")]
-        public void MapStateFieldValue_To_CMMI(string sourceValue, string expectedResult)
+        [InlineData("To Do", "Requirement", "Proposed")]
+        [InlineData("New", "Requirement", "Proposed")]
+        [InlineData("Approved", "Requirement", "Active")]
+        [InlineData("Committed", "Requirement", "Resolved")]
+        [InlineData("Done", "Requirement", "Closed")]
+        [InlineData("Removed", "Requirement", "Removed")]
+        public void MapStateFieldValue_To_CMMI(string sourceValue, string destinationWorkItemType, string expectedResult)
         {
-            var actualResult = WorkItemWrite.MapStateFieldValue(new[] { "Requirement", "Bug", "Epic", "Feature", "Task", "Issue", "Issue", "Risk", "Review", "Test Case" }, sourceValue);
+            var actualResult = WorkItemWrite.MapStateFieldValue(new[] { "Requirement", "Bug", "Epic", "Feature", "Task", "Issue", "Issue", "Risk", "Review", "Test Case" }, destinationWorkItemType, sourceValue);
 
             Assert.Equal(expectedResult, actualResult);
         }

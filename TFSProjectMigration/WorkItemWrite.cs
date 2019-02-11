@@ -45,7 +45,7 @@ namespace TFSProjectMigration
             Queue<string> result = new Queue<string>();
             string previousState = null;
             string originalState = (string)newWorkItem.Fields["State"].Value;
-            string sourceState = MapStateFieldValue(destinationWorkItemTypeNames, oldWorkItem.Fields["State"].Value.ToString());
+            string sourceState = MapStateFieldValue(destinationWorkItemTypeNames, newWorkItem.Type.Name, oldWorkItem.Fields["State"].Value.ToString());
             string sourceFinalReason = (string)oldWorkItem.Fields["Reason"].Value;
 
             //try to change the status directly
@@ -278,7 +278,7 @@ namespace TFSProjectMigration
             CreateExternalLinks(newItems, sourceStore, ProgressBar);
         }
 
-        internal static string MapStateFieldValue(IEnumerable<string> destinationWorkItemTypeNames, string sourceStateValue)
+        internal static string MapStateFieldValue(IEnumerable<string> destinationWorkItemTypeNames, string destinationWorkItemType, string sourceStateValue)
         {
             var agileTypes = new[] { "User Story", "Bug", "Epic", "Feature", "Task", "Issue" };
             var scrumTypes = new[] { "Product Backlog Item", "Bug", "Epic", "Feature", "Task", "Impediment" };
@@ -296,6 +296,9 @@ namespace TFSProjectMigration
                     return "Active";
 
                 if (new[] { "Done" }.Any(x => x.Equals(sourceStateValue, StringComparison.OrdinalIgnoreCase)))
+                    return "Closed";
+
+                if (destinationWorkItemType.Equals("Bug", StringComparison.OrdinalIgnoreCase) && new[] { "Removed" }.Any(x => x.Equals(sourceStateValue, StringComparison.OrdinalIgnoreCase)))
                     return "Closed";
             }
 
