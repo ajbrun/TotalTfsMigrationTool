@@ -241,7 +241,7 @@
                 <Grid Background="#FFFDFDFD">
                     <Button x:Name="MigrationButton" Content="Migrate" HorizontalAlignment="Left" Margin="10,26,0,0" VerticalAlignment="Top" Width="134" Height="28" Click="MigrationButton_Click"/>
 
-                    <Label x:Name="MigratingLabel" Content="" HorizontalAlignment="Left" Margin="10,450,0,0" VerticalAlignment="Top" Width="141"/>
+                    <Label x:Name="MigratingLabel" Content="" HorizontalAlignment="Left" Margin="10,450,0,0" VerticalAlignment="Top" Width="300"/>
                     <ProgressBar x:Name="StatusBar" HorizontalAlignment="Left" Height="22" Margin="10,490,0,0" VerticalAlignment="Top" Width="532" Foreground="#FF1BAA1B" Visibility="Hidden"/>
                     <GroupBox Header="Status" HorizontalAlignment="Left" Height="259" Margin="10,84,0,0" VerticalAlignment="Top" Width="532" BorderBrush="#FFABD3FD">
                         <ScrollViewer x:Name="StatusViwer" HorizontalAlignment="Left" Height="207" Margin="0,20,-2,0" VerticalAlignment="Top" Width="522" HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Auto" Background="#FFFDFDFD">
