@@ -1010,17 +1010,16 @@ namespace TFSProjectMigration
                 }
 
                 XmlDocument workItemTypeXmlSource = workItemTypeSource.Export(false);
-                XmlDocument workItemTypeXmlTarget = workItemTypeTarget.Export(false);
+                var targetFields = workItemTypeSource.FieldDefinitions;
 
                 XmlNodeList fieldListSource = workItemTypeXmlSource.GetElementsByTagName("FIELD");
-                XmlNodeList fieldListTarget = workItemTypeXmlTarget.GetElementsByTagName("FIELD");
 
                 foreach (XmlNode field in fieldListSource)
                 {
                     if (field.Attributes["name"] != null)
                     {
-                        XmlNodeList tempList = workItemTypeXmlTarget.SelectNodes("//FIELD[@name='" + field.Attributes["name"].Value + "']");
-                        if (tempList.Count == 0)
+                        var targetField = targetFields.TryGetByName(field.Attributes["name"].Value);
+                        if (targetField != default)
                         {
                             sourceList.Add(field.Attributes["name"].Value);
                         }
@@ -1028,14 +1027,14 @@ namespace TFSProjectMigration
                 }
                 fieldList.Add(sourceList);
 
-                foreach (XmlNode field in fieldListTarget)
+                foreach (FieldDefinition field in targetFields)
                 {
-                    if (field.Attributes["name"] != null)
+                    if (field != null && field.Name != null)
                     {
-                        XmlNodeList tempList = workItemTypeXmlSource.SelectNodes("//FIELD[@name='" + field.Attributes["name"].Value + "']");
+                        XmlNodeList tempList = workItemTypeXmlSource.SelectNodes("//FIELD[@name='" + field.Name + "']");
                         if (tempList.Count == 0)
                         {
-                            targetList.Add(field.Attributes["name"].Value);
+                            targetList.Add(field.Name);
                         }
                     }
                 }
