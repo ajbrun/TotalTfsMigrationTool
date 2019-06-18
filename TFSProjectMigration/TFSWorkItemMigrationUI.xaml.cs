@@ -149,6 +149,11 @@ namespace TFSProjectMigration
             {
                 StatusBar.Visibility = Visibility.Visible;
             }));
+
+            MigratingLabel.Dispatcher.BeginInvoke(new Action(delegate ()
+            {
+                MigratingLabel.Content = "Fetching work items and downloading attachments";
+            }));
             WorkItemCollection source = readSource.GetWorkItems(sourceProject.Name, IsNotIncludeClosed, IsNotIncludeRemoved, StatusBar); //Get Workitems from source tfs 
             XmlNode[] iterations = readSource.PopulateIterations(); //Get Iterations and Areas from source tfs 
 
