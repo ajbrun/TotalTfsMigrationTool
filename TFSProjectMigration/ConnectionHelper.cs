@@ -2,6 +2,7 @@
 using Microsoft.TeamFoundation;
 using Microsoft.TeamFoundation.WorkItemTracking.Client;
 using System;
+using System.Threading;
 
 namespace TFSProjectMigration
 {
@@ -20,6 +21,7 @@ namespace TFSProjectMigration
                 catch (TeamFoundationServiceUnavailableException e)
                 {
                     HandleException(i, maxAttempts, contextMessage, e);
+                    DelayMs(i);
                 }
             }
 
@@ -39,14 +41,21 @@ namespace TFSProjectMigration
                 catch (TeamFoundationServiceUnavailableException e)
                 {
                     HandleException(i, maxAttempts, contextMessage, e);
+                    DelayMs(i);
                 }
                 catch (FileAttachmentException e)
                 {
                     HandleException(i, maxAttempts, contextMessage, e);
+                    DelayMs(i);
                 }
             }
 
             logger.Error("Retries failed.");
+        }
+
+        private static void DelayMs(int attemptIndex, int msDelay = 10)
+        {
+            Thread.Sleep(TimeSpan.FromMilliseconds((attemptIndex + 1) * msDelay));
         }
 
         private static void HandleException(int iterationIndex, int maxAttempts, string contextMessage, Exception e)
