@@ -40,6 +40,14 @@ namespace TFSProjectMigration
             itemMapCIC = new Hashtable();
         }
 
+        public void UpdateHistoryToLatest(WorkItem oldWorkItem, WorkItem newWorkItem)
+        {
+            foreach (Revision revision in oldWorkItem.Revisions)
+            {
+                AddWorkItemCommentHistory(newWorkItem, revision);
+            }
+        }
+
         public void updateToLatestStatus(IEnumerable<string> destinationWorkItemTypeNames, WorkItem oldWorkItem, WorkItem newWorkItem)
         {
             Queue<string> result = new Queue<string>();
@@ -140,6 +148,44 @@ namespace TFSProjectMigration
             }
         }
 
+        private bool AddWorkItemCommentHistory(WorkItem workItem, string changedBy, DateTime changedDate, string history)
+        {
+            try
+            {
+                if (history.StartsWith("Associated with changeset"))
+                    return true;
+
+                if (!string.IsNullOrWhiteSpace(history) && history != workItem.History)
+                {
+                    workItem.Open();
+                    workItem.History = history;
+                    workItem.Fields["Changed By"].Value = changedBy;
+                    workItem.Fields["Changed Date"].Value = changedDate;
+
+                    ArrayList list = workItem.Validate();
+                    workItem.RetrySave();
+                }
+                return true;
+            }
+            catch (Exception ex)
+            {
+                return false;
+            }
+        }
+
+        private bool AddWorkItemCommentHistory(WorkItem workItem, Revision revision)
+        {
+            var historyValue = (string)revision.Fields["History"].Value;
+
+            if (string.IsNullOrWhiteSpace(historyValue) || historyValue == workItem.History)
+                return true;
+
+            if (historyValue.StartsWith("Associated with changeset"))
+                return true;
+
+            return AddWorkItemCommentHistory(workItem, (string)revision.Fields["Changed By"].Value, (DateTime)revision.Fields["Changed Date"].Value, historyValue);
+        }
+
         private static IEnumerable<string> GetWorkItemTypeNames(WorkItemTypeCollection destinationWorkItemTypes)
         {
             var workItemTypeNames = new List<string>();
@@ -206,7 +252,7 @@ namespace TFSProjectMigration
                     /* assign relevent fields*/
                     foreach (Field field in workItem.Fields)
                     {
-                        if (field.Name.Contains("ID") || field.Name.Contains("State") || field.Name.Contains("Reason"))
+                        if (field.Name.Contains("ID") || field.Name.Contains("State") || field.Name.Contains("Reason") || field.Name.Equals("History", StringComparison.OrdinalIgnoreCase))
                         {
                             continue;
                         }
@@ -246,6 +292,7 @@ namespace TFSProjectMigration
                     if (array.Count == 0)
                     {
                         UploadAttachments(newWorkItem, workItem);
+                        UpdateHistoryToLatest(workItem, newWorkItem);
                         newWorkItem.RetrySave();
 
                         itemMap.Add(workItem.Id, newWorkItem.Id);
