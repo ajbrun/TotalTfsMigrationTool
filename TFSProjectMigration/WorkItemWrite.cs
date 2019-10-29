@@ -1,6 +1,9 @@
 ﻿using log4net;
 using Microsoft.TeamFoundation.Client;
+using Microsoft.TeamFoundation.Framework.Client;
+using Microsoft.TeamFoundation.Framework.Common;
 using Microsoft.TeamFoundation.Server;
+using Microsoft.TeamFoundation.VersionControl.Client;
 using Microsoft.TeamFoundation.WorkItemTracking.Client;
 using Microsoft.TeamFoundation.WorkItemTracking.Proxy;
 using System;
@@ -756,6 +759,66 @@ namespace TFSProjectMigration
             store.RefreshCache();
         }
 
+        public void WriteVCAuthors(TfsTeamProjectCollection sourceTeamProjectCollection, string sourceProjectName)
+        {
+            var filePath = "Map\\authors.txt";
+
+            //Don't do anything if we already have a generated file
+            if (File.Exists(filePath))
+                return;
+
+            var vcs = sourceTeamProjectCollection.GetService<VersionControlServer>();
+            var managementService = sourceTeamProjectCollection.GetService<IIdentityManagementService>();
+
+            var history = vcs.QueryHistory($"$/{sourceProjectName}", new ChangesetVersionSpec(1), 0, RecursionType.Full, null, new ChangesetVersionSpec(1), LatestVersionSpec.Latest, int.MaxValue, true, false);
+
+            var users = new HashSet<AuthorEntry>();
+
+            //List of AD users
+            var gss = sourceTeamProjectCollection.GetService<IGroupSecurityService>();
+            var sids = gss.ReadIdentity(SearchFactor.AccountName, "Project Collection Valid Users", QueryMembership.Expanded);
+            var identities = gss.ReadIdentities(SearchFactor.Sid, sids.Members, QueryMembership.None)
+                .Where(c => c != null)
+                .Where(c => c.Type == IdentityType.WindowsUser);
+
+            foreach (Changeset entry in history)
+            {
+                if (users.Any(x => x.UserName.Equals(entry.Committer, StringComparison.OrdinalIgnoreCase)))
+                    continue;
+
+                var member = managementService.ReadIdentity(IdentitySearchFactor.AccountName, entry.Committer, MembershipQuery.Direct, ReadIdentityOptions.ExtendedProperties);
+
+                //Attempt to get VC author from Mail property
+                //If not found, then we'll consult AD list
+                //Will need manual check after generation
+                var emailAddress = member.GetAttribute("Mail", string.Empty);
+
+                if (string.IsNullOrWhiteSpace(emailAddress))
+                {
+                    var matchedIdentities = identities.Where(x => x.AccountName.Equals(entry.Committer, StringComparison.OrdinalIgnoreCase)
+                        || $"{x.Domain}\\{x.AccountName}".Equals(entry.Committer, StringComparison.OrdinalIgnoreCase));
+
+                    emailAddress = matchedIdentities.Select(x => x.MailAddress).FirstOrDefault();
+                }
+
+                users.Add(new AuthorEntry { Name = entry.CommitterDisplayName, UserName = entry.Committer, Email = emailAddress });
+            }
+
+            if (!Directory.Exists(@"Map"))
+                Directory.CreateDirectory(@"Map");
+
+            using (var fs = File.Open(filePath, FileMode.Create, FileAccess.Write))
+            using (var sw = new StreamWriter(fs))
+            {
+                foreach (var user in users)
+                {
+                    sw.WriteLine($"{user.UserName} = {user.Name} <{user.Email}>");
+                }
+
+                sw.Flush();
+                fs.Flush();
+            }
+        }
 
         /* write ID mapping to local file */
         public void WriteMaptoFile(string sourceProjectName)

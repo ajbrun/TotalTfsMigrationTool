@@ -152,6 +152,12 @@ namespace TFSProjectMigration
 
             StatusViwer.Dispatcher.BeginInvoke(new Action(delegate ()
             {
+                StatusViwer.Content = "Generating authors file";
+            }));
+            writeTarget.WriteVCAuthors(sourceTFS, sourceProject.Name);
+
+            StatusViwer.Dispatcher.BeginInvoke(new Action(delegate ()
+            {
                 StatusViwer.Content = "Fetching work items and downloading attachments";
             }));
             WorkItemCollection source = readSource.GetWorkItems(sourceProject.Name, IsNotIncludeClosed, IsNotIncludeRemoved, StatusBar); //Get Workitems from source tfs 

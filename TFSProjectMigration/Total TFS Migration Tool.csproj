@@ -227,6 +227,7 @@
     <Reference Include="System.Data" />
     <Reference Include="System.Data.Linq" />
     <Reference Include="System.Deployment" />
+    <Reference Include="System.DirectoryServices.AccountManagement" />
     <Reference Include="System.Drawing" />
     <Reference Include="System.IdentityModel.Tokens.Jwt, Version=5.2.1.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35, processorArchitecture=MSIL">
       <HintPath>..\packages\System.IdentityModel.Tokens.Jwt.5.2.1\lib\net45\System.IdentityModel.Tokens.Jwt.dll</HintPath>
@@ -264,6 +265,7 @@
       <Generator>MSBuild:Compile</Generator>
       <SubType>Designer</SubType>
     </ApplicationDefinition>
+    <Compile Include="AuthorEntry.cs" />
     <Compile Include="Extensions\WorkItemExtensions.cs" />
     <Compile Include="Extensions\WorkItemStoreExtensions.cs" />
     <Compile Include="ImageHelpers.cs" />
