@@ -285,6 +285,12 @@ namespace TFSProjectMigration
                         }
                     }
 
+                    // Tie the old work item to the new
+                    if (newWorkItem.Fields.Contains("Legacy TFS ID"))
+                    {
+                        newWorkItem.Fields["Legacy TFS ID"].Value = workItem.Id;
+                    }
+
                     /* Validate Item Before Save*/
                     ArrayList array = newWorkItem.Validate();
                     foreach (Field item in array)
