@@ -770,7 +770,7 @@ namespace TFSProjectMigration
             var vcs = sourceTeamProjectCollection.GetService<VersionControlServer>();
             var managementService = sourceTeamProjectCollection.GetService<IIdentityManagementService>();
 
-            var history = vcs.QueryHistory($"$/{sourceProjectName}", new ChangesetVersionSpec(1), 0, RecursionType.Full, null, new ChangesetVersionSpec(1), LatestVersionSpec.Latest, int.MaxValue, true, false);
+            var history = vcs.QueryHistory($"$/{sourceProjectName}", new ChangesetVersionSpec(1), 0, RecursionType.Full, null, new ChangesetVersionSpec(1), LatestVersionSpec.Latest, int.MaxValue, false, false);
 
             var users = new HashSet<AuthorEntry>();
 
@@ -800,6 +800,9 @@ namespace TFSProjectMigration
 
                     emailAddress = matchedIdentities.Select(x => x.MailAddress).FirstOrDefault();
                 }
+
+                if (emailAddress != null)
+                    emailAddress = emailAddress.ToLower();
 
                 users.Add(new AuthorEntry { Name = entry.CommitterDisplayName, UserName = entry.Committer, Email = emailAddress });
             }
