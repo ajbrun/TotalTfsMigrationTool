@@ -158,14 +158,14 @@ namespace TFSProjectMigration
 
             StatusViwer.Dispatcher.BeginInvoke(new Action(delegate ()
             {
-                StatusViwer.Content = "Fetching work items and downloading attachments";
+                StatusViwer.Content = StatusViwer.Content + "\nFetching work items and downloading attachments";
             }));
             WorkItemCollection source = readSource.GetWorkItems(sourceProject.Name, IsNotIncludeClosed, IsNotIncludeRemoved, StatusBar); //Get Workitems from source tfs 
             XmlNode[] iterations = readSource.PopulateIterations(); //Get Iterations and Areas from source tfs 
 
             StatusViwer.Dispatcher.BeginInvoke(new Action(delegate()
             {
-                StatusViwer.Content = "Generating Areas...";
+                StatusViwer.Content = StatusViwer.Content + "\nGenerating Areas...";
             }));
             writeTarget.GenerateAreas(iterations[0], sourceProject.Name); //Copy Areas
 
